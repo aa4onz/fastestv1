@@ -3,10 +3,41 @@ use crate::app::AppState;
 use crate::models::MessageStatus;
 use crate::ui::theme::Theme;
 use ratatui::{
-    style::{Modifier, Style, Color},
+    style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph},
+    widgets::{Block, Borders, List, ListItem, Paragraph},
 };
+
+pub fn render_servers<'a>(state: &AppState, border_style: Style) -> List<'a> {
+    let items: Vec<ListItem> = state
+        .servers
+        .iter()
+        .map(|s| ListItem::new(s.name.as_str()))
+        .collect();
+
+    List::new(items).block(
+        Block::default()
+            .title(" servers ")
+            .borders(Borders::ALL)
+            .border_style(border_style),
+    )
+}
+
+pub fn render_channels<'a>(state: &AppState, border_style: Style) -> List<'a> {
+    let mut channel_items = Vec::new();
+    if let Some(selected_server) = state.servers_state.selected().and_then(|i| state.servers.get(i)) {
+        for ch in &selected_server.channels {
+            channel_items.push(ListItem::new(format!("# {}", ch.name)));
+        }
+    }
+
+    List::new(channel_items).block(
+        Block::default()
+            .title(" channels ")
+            .borders(Borders::ALL)
+            .border_style(border_style),
+    )
+}
 
 pub fn render_chat_feed(state: &AppState, theme: &Theme, available_rows: usize) -> Paragraph<'static> {
     let mut chat_lines = Vec::new();
