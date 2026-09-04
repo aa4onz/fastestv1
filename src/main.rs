@@ -68,13 +68,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Ultra-fast client configuration: TCP NoDelay, TCP KeepAlive, permanent connection reuse
     let http_client = reqwest::Client::builder()
         .tcp_nodelay(true)
-        .tcp_keepalive(std::time::Duration::from_secs(30))
-        .pool_max_idle_per_host(20)
-        .pool_idle_timeout(std::time::Duration::from_secs(300))
+        .tcp_keepalive(std::time::Duration::from_secs(15))
+        .pool_max_idle_per_host(50)
+        .pool_idle_timeout(std::time::Duration::from_secs(600))
+        .http2_prior_knowledge()
         .default_headers(headers)
         .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
         .build()
-        .unwrap();
+        .unwrap_or_else(|_| {
+            // Fallback if HTTP/2 prior knowledge negotiation is rejected by local network
+            reqwest::Client::builder()
+                .tcp_nodelay(true)
+                .tcp_keepalive(std::time::Duration::from_secs(15))
+                .pool_max_idle_per_host(50)
+                .pool_idle_timeout(std::time::Duration::from_secs(600))
+                .build()
+                .unwrap()
+        });
 
     // Boots the background handlers inside the network folder ecosystem
     network::spawn_network_handlers(Arc::clone(&app_state), event_tx.clone(), http_client.clone(), net_rx);
@@ -119,7 +129,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     })?;
 
-    // ⚡ THE EVENT PIPELINE: Process actions instantly, then draw exactly once
+    // ⚡ THE EVENT PIPELINE: Process actions instantly, then draw when channel is clear
     while let Some(event) = event_rx.recv().await {
         match event {
             // Instantly offload intensive outbound HTTP network actions down the channel pipeline
@@ -131,6 +141,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let should_exit = state.handle_event(event, &event_tx).await;
                 if should_exit { break; }
             }
+        }
+
+        // ⚡ OPTIMIZATION: Skip terminal redraw if more events are pending in queue
+        if !event_rx.is_empty() {
+            continue;
         }
 
         let app_state_clone = Arc::clone(&app_state);

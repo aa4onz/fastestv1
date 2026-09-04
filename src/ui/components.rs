@@ -5,29 +5,8 @@ use crate::ui::theme::Theme;
 use ratatui::{
     style::{Modifier, Style, Color},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, Paragraph},
+    widgets::{Block, Borders, Paragraph},
 };
-
-pub fn render_servers(state: &AppState, style: Style) -> List<'static> {
-    let items: Vec<ListItem> = state.servers.iter().enumerate().map(|(i, s)| {
-        let prefix = if i == state.selected_server_idx { ">> " } else { "   " };
-        ListItem::new(format!("{}{}", prefix, s.name))
-    }).collect();
-
-    List::new(items)
-        .block(Block::default().title(" servers ").borders(Borders::ALL).border_style(style))
-}
-
-pub fn render_channels(state: &AppState, style: Style) -> List<'static> {
-    let current_channels = &state.servers[state.selected_server_idx].channels;
-    let items: Vec<ListItem> = current_channels.iter().enumerate().map(|(i, c)| {
-        let prefix = if i == state.selected_channel_idx { ">> " } else { "   " };
-        ListItem::new(format!("{}# {}", prefix, c.name))
-    }).collect();
-
-    List::new(items)
-        .block(Block::default().title(" channels ").borders(Borders::ALL).border_style(style))
-}
 
 pub fn render_chat_feed(state: &AppState, theme: &Theme, available_rows: usize) -> Paragraph<'static> {
     let mut chat_lines = Vec::new();
@@ -61,18 +40,7 @@ pub fn render_chat_feed(state: &AppState, theme: &Theme, available_rows: usize) 
         }
     }
 
-    // Handle typing notifications footer text
-    let footer_text = match state.typing_users.get(&state.current_channel_id()) {
-        Some(typers) if !typers.is_empty() => {
-            let names: Vec<String> = typers.keys().cloned().collect();
-            if names.len() == 1 {
-                format!(" ✍️ {} is typing... ", names[0])
-            } else {
-                " ✍️ Several people are typing... ".to_string()
-            }
-        }
-        _ => format!(" channel: #{} ", state.current_channel_name()),
-    };
+    let footer_text = format!(" channel: #{} ", state.target_channel_id);
 
     let total_lines = chat_lines.len();
     let visible_lines = if total_lines > available_rows {
@@ -86,5 +54,5 @@ pub fn render_chat_feed(state: &AppState, theme: &Theme, available_rows: usize) 
 
 pub fn render_input_field(state: &AppState, style: Style) -> Paragraph<'static> {
     Paragraph::new(format!("> {}", state.input_text))
-        .block(Block::default().title(" chat context [Ctrl+X to Logout] ").borders(Borders::ALL).border_style(style))
+        .block(Block::default().title(" chat context ").borders(Borders::ALL).border_style(style))
 }

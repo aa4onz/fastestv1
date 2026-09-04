@@ -46,10 +46,19 @@ pub async fn run_gateway_loop(app_state: Arc<Mutex<AppState>>, event_tx: Sender<
                                     let ev = pay.t.as_deref().unwrap_or("");
                                     
                                     if ev == "MESSAGE_CREATE" && pay.d["channel_id"].as_str() == Some(&target_cid) {
-                                        let msg_id_str = pay.d["id"].as_str().unwrap_or("0");
                                         let current_time_str = chrono::Local::now().format("%H:%M:%S%.3f").to_string();
+                                        let nonce = pay.d["nonce"].as_str().unwrap_or("").to_string();
+                                        let msg_id_str = pay.d["id"].as_str().unwrap_or("0");
                                         
-                                        let transit_time_str = if let Ok(msg_id) = msg_id_str.parse::<u64>() {
+                                        let transit_time_str = if nonce.starts_with("n-") {
+                                            if let Ok(creation_nanos) = nonce[2..].parse::<i64>() {
+                                                let current_nanos = chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0);
+                                                let rtt_ms = (current_nanos - creation_nanos).max(0) / 1_000_000;
+                                                format!("{} | Gateway RTT {}ms", current_time_str, rtt_ms)
+                                            } else {
+                                                format!("{} | Gateway Recv", current_time_str)
+                                            }
+                                        } else if let Ok(msg_id) = msg_id_str.parse::<u64>() {
                                             let discord_epoch_ms = (msg_id >> 22) + 1420070400000;
                                             let current_ms = chrono::Utc::now().timestamp_millis() as u64;
                                             let diff = current_ms.saturating_sub(discord_epoch_ms);
@@ -58,7 +67,6 @@ pub async fn run_gateway_loop(app_state: Arc<Mutex<AppState>>, event_tx: Sender<
                                             format!("{} | Gateway Recv", current_time_str)
                                         };
 
-                                        let nonce = pay.d["nonce"].as_str().unwrap_or("").to_string();
                                         let state = state_ref.lock().await;
                                         let is_dup = state.messages.iter().any(|x| x.nonce == nonce && !nonce.is_empty());
                                         drop(state);
