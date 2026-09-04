@@ -1,4 +1,4 @@
-// src/main.rs - PART 1
+// src/main.rs
 pub mod models;
 pub mod network;
 pub mod app;
@@ -47,10 +47,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app_state = Arc::new(Mutex::new(initial_state));
 
     // Core communication channels: event_rx handles ui, net_rx passes to your network worker module
-    let (event_tx, mut event_rx) = mpsc::channel::<AppEvent>(100);
-    let (net_tx, net_rx) = mpsc::channel::<AppEvent>(50); 
+    let (event_tx, mut event_rx) = mpsc::channel::<AppEvent>(1000);
+    let (net_tx, net_rx) = mpsc::channel::<AppEvent>(1000); 
     
-    // ⚡ SPOOFED HTTP CLIENT FOR BYPASSING DISCORD AUTOMATED SECURITY FILTERS
+    // ⚡ SPOOFED HTTP CLIENT OPTIMIZED FOR EXTREME LOW LATENCY (PRE-CONNECTED TCP/HTTP2 POOL)
     let mut headers = reqwest::header::HeaderMap::new();
     headers.insert("accept", "*/*".parse().unwrap());
     headers.insert("accept-language", "en-US,en;q=0.9".parse().unwrap());
@@ -61,25 +61,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     headers.insert("sec-fetch-mode", "cors".parse().unwrap());
     headers.insert("sec-fetch-site", "same-origin".parse().unwrap());
     headers.insert("x-debug-options", "bugReporterEnabled".parse().unwrap());
-    headers.insert("x-discord-timezone", "America/New_York".parse().unwrap());
+    headers.insert("x-discord-timezone", "Asia/Dhaka".parse().unwrap());
     
-    // This base64 payload mimics an official secure Windows 10 desktop client profile layer
     headers.insert("x-super-properties", "eyJvcyI6IldpbmRvd3MiLCJicm93c2VyIjoiQ2hyb21lIiwiZGV2aWNlIjoiIiwicmVmZXJyZXIiOiJodHRwczovL2Rpc2NvcmQuY29tLyIsIm9zX3ZlcnNpb24iOiIxMCIsImJyb3dzZXJfdmVyc2lvbiI6IjEyOC4wLjAuMCIsImJsdWV0b290aF9lbmFibGVkIjpmYWxzZX0=".parse().unwrap());
 
-    // Persistent HTTP pool connection engine optimization settings with embedded browser profiles
+    // Ultra-fast client configuration: TCP NoDelay, TCP KeepAlive, permanent connection reuse
     let http_client = reqwest::Client::builder()
         .tcp_nodelay(true)
-        .pool_max_idle_per_host(5)
-        .pool_idle_timeout(std::time::Duration::from_secs(120))
+        .tcp_keepalive(std::time::Duration::from_secs(30))
+        .pool_max_idle_per_host(20)
+        .pool_idle_timeout(std::time::Duration::from_secs(300))
         .default_headers(headers)
         .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
         .build()
         .unwrap();
 
-    // Boots the background handlers inside the network folder ecosystem ecosystem
+    // Boots the background handlers inside the network folder ecosystem
     network::spawn_network_handlers(Arc::clone(&app_state), event_tx.clone(), http_client.clone(), net_rx);
-// src/main.rs - PART 2
-    // Draw the interface layout exactly once when the program boots up
+
     let app_state_clone = Arc::clone(&app_state);
     {
         let mut state = app_state_clone.lock().await;
@@ -134,7 +133,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        // 🌟 THUT REPAINT SEQUENCE: Redraws view states only when updates occur
         let app_state_clone = Arc::clone(&app_state);
         
         {
@@ -224,7 +222,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         })?;
     }
 
-    // Clean terminal workspace state rollback upon user exiting application loop environments
     crossterm::terminal::disable_raw_mode()?;
     crossterm::execute!(terminal.backend_mut(), crossterm::terminal::LeaveAlternateScreen, crossterm::cursor::Show)?;
     Ok(())

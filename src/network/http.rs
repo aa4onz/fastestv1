@@ -49,7 +49,7 @@ impl DiscordHttpClient {
         Ok(())
     }
 
-    /// ⚡ OPTIMIZED FOR MAX SPEED: Sends message json frame cleanly
+    /// ⚡ OPTIMIZED FOR MAX SPEED: Sends message json frame cleanly over pre-warmed TCP stream
     pub async fn send_message(&self, channel_id: &str, text: &str, nonce: &str) -> Result<reqwest::Response, reqwest::Error> {
         let url = format!("https://discord.com/api/v10/channels/{}/messages", channel_id);
         let json_payload = serde_json::json!({

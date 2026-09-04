@@ -30,3 +30,6 @@
 
 # 2026-09-03 23:49:24.093457
 +i want to show timestamp with milisecond and latency like how fast my texts delivered to discord. is my implement correct for that?
+
+# 2026-09-04 01:21:22.855779
++is my app fastest sendingt to discord.. as i live in bangladesh i face like 600ms latency.. how to make it below 200ms
